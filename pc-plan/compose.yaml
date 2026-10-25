@@ -1,0 +1,17 @@
+services:
+  pc-plan:
+    build: .
+    image: pc-plan-web:local
+    ports:
+      - "${PC_PLAN_PORT:-8088}:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=768m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256

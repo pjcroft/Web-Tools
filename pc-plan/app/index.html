@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PC Plan Web</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <aside>
+      <div class="brand" aria-label="PC Plan"><img src="/pc-plan.svg" alt="PC Plan"><small>PC PLAN</small></div>
+      <a class="nav" href="../">← pjcroft web tools</a><button id="new" class="nav">＋ New project</button
+      ><button id="open" class="nav">▤ Open project</button
+      ><button id="import" class="nav">↥ Import plan</button>
+      <div class="aside-bottom">
+        <span class="dot"></span> LOCAL FILES<small
+          >Save .pln files to your computer.</small
+        >
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow">
+            PC PLAN <span>/</span> SCHEDULE
+          </div>
+          <input id="projectName" aria-label="Project name" maxlength="200" />
+          <div class="meta">
+            <span id="status">Unsaved example</span><span>•</span
+            ><label
+              >Project start <input id="projectStart" type="date"
+            /></label>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="save">Save .pln</button
+          ><button id="saveAs">Download .pln copy</button
+          ><button id="exportXml">Export Project XML</button><button class="primary" id="export">Export PDF ↗</button>
+        </div>
+      </header>
+      <section class="workspace">
+        <div class="toolbar">
+          <div class="tabs">Schedule <span>TABLE + GANTT</span></div>
+          <div class="tools">
+            <button id="addTask">＋ Task</button
+            ><button id="addPhase">＋ Phase</button
+            ><button id="addMilestone">◇ Milestone</button
+            ><span class="separator"></span
+            ><button id="outdent" title="Outdent selected task">
+              ← Outdent</button
+            ><button
+              id="indent"
+              title="Indent selected task under previous phase"
+            >
+              Indent →</button
+            ><button id="delete" title="Delete selected task">Delete</button
+            ><button id="undo" title="Undo">↶</button
+            ><button id="details">More columns</button
+            ><select id="scale" aria-label="Timeline scale">
+              <option value="fit" selected>Fit timeline</option>
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+            </select>
+            <div class="timeline-zoom" role="group" aria-label="Timeline zoom">
+              <button id="zoomOut" aria-label="Zoom out timeline" title="Zoom out timeline">−</button>
+              <output id="zoomLevel" aria-live="polite">100%</output>
+              <button id="zoomIn" aria-label="Zoom in timeline" title="Zoom in timeline">+</button>
+            </div>
+          </div>
+        </div>
+        <div class="hint">
+          Select a row to organize it. Edit any cell to update the schedule.
+          <span>Shift-click to select a range, then change a colour to colour them all. Ctrl-click a successor, then right-click to add or break a dependency.</span>
+        </div>
+        <div id="schedule" class="schedule"></div>
+        <footer>
+          <span id="selection">No row selected</span
+          ><label class="bulk-color">Colour selected
+            <input id="bulkColor" type="color" value="#22d3ee" disabled
+          /></label
+          ><span
+            ><i class="legend-bar"></i> Task
+            <i class="legend-diamond"></i> Milestone <b>━</b> Phase
+            <span class="footer-note"
+              >Changes save only when you choose Save project</span
+            ></span
+          >
+        </footer>
+      </section>
+      <div id="notice" role="status" aria-live="polite"></div>
+      <div id="contextMenu" role="menu" hidden></div>
+    </main>
+    <input type="file" id="file" accept=".json,.pln,.fieldplan" hidden />
+    <dialog id="dialog"><div id="dialogContent"></div></dialog>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>
+

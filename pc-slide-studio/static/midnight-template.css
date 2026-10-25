@@ -1,0 +1,126 @@
+/* ============================================================
+   pjcroft web tools — Midnight Electric + beige/tan
+   Starter template for new apps. Copy this file into a new
+   tool, link it, and build on it — don't re-pick colours.
+   Pattern: dark navy chrome around the outside, cyan for the
+   main action, amber for highlights, tan for secondary text,
+   and a WHITE work surface in the middle (Gantt, task table,
+   PDF pages — never dark).
+   ============================================================ */
+
+:root {
+  /* Dark chrome */
+  --bg: #0b1220;        /* page / sidebar background */
+  --panel: #111c30;     /* cards, panels */
+  --panel2: #16233f;    /* raised panels, table headers on dark */
+  --glow: #16324f;      /* optional radial glow on the hub */
+  --text: #e8eefc;      /* main text on dark */
+  --muted: #93a4c4;     /* secondary text on dark */
+  --line: #26365a;      /* borders on dark */
+  --line-dark: #1e2f4a; /* subtle row dividers on dark */
+
+  /* Accents */
+  --accent: #22d3ee;    /* primary buttons, links, highlights */
+  --accent-hover: #67e8f9;
+  --accent2: #f59e0b;   /* amber highlights, milestones, warnings */
+  --tan: #d9c7a5;       /* beige/tan secondary text, eyebrows */
+  --tan-light: #efe6cf; /* lighter tan inner panels / buttons */
+
+  /* White work surface (keep the document area light) */
+  --paper: #ffffff;
+  --paper-text: #243b3b;
+  --paper-muted: #73847a;
+  --paper-line: #dce4df;
+  --paper-row: #edf1ed;
+  --paper-head: #f7f9f7;
+  --paper-selected: #fff0d0;
+  --paper-phase: #fff8e9;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+a { color: var(--accent); }
+a:hover { color: var(--accent-hover); }
+
+/* ---- Buttons ---- */
+button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel2);
+  color: var(--text);
+  padding: 9px 13px;
+}
+button:hover { border-color: var(--accent); }
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+button.primary:hover { background: var(--accent-hover); }
+
+/* ---- Sidebar / chrome ---- */
+aside {
+  background: var(--bg);
+  color: var(--text);
+}
+aside .nav { color: var(--text); }
+aside .nav:hover { background: var(--panel2); color: var(--tan); }
+
+/* ---- Home link (pattern for every app page) ---- */
+/* <div class="homebar"><a href="../">← pjcroft web tools</a></div> */
+.homebar a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.homebar a:hover { color: var(--tan); }
+
+/* ---- Cards ---- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 20px;
+}
+.eyebrow {
+  color: var(--tan);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.muted { color: var(--muted); }
+
+/* ---- White work surface ---- */
+.workspace {
+  background: var(--paper);
+  color: var(--paper-text);
+  border: 1px solid var(--paper-line);
+  border-radius: 9px;
+}
+.workspace th {
+  background: var(--paper-head);
+  color: var(--paper-muted);
+  border-bottom: 1px solid var(--paper-line);
+}
+.workspace td { border-bottom: 1px solid var(--paper-row); }
+.workspace tr.selected td { background: var(--paper-selected); }
+.workspace tr.phase td { background: var(--paper-phase); }
+
+/* ---- Tan inspector panel (Form Studio pattern) ---- */
+.inspector {
+  background: var(--tan);
+  color: var(--bg);
+}
+.inspector .inner {
+  background: var(--tan-light);
+  color: var(--bg);
+}
