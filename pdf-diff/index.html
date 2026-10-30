@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Doc Diff</title>
+<style>
+:root{
+  --bg:#0b1220; --panel:#111c30; --panel2:#16233f;
+  --text:#e8eefc; --muted:#93a4c4; --line:#26365a;
+  --accent:#22d3ee; --accent2:#f59e0b; --tan:#d9c7a5;
+  --add:#16a34a; --rem:#e5484d;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:var(--bg);display:flex;flex-direction:column;min-height:100vh}
+header{display:flex;align-items:center;gap:1rem;padding:.7rem 1.2rem;border-bottom:1px solid var(--line);background:var(--panel)}
+header a{color:var(--muted);text-decoration:none;font-size:.9rem}
+header a:hover{color:var(--accent)}
+header h1{margin:0;font-size:1.15rem;letter-spacing:.01em}
+header h1 span{color:var(--accent)}
+header .sp{flex:1}
+header .priv{font-size:.78rem;color:var(--muted)}
+header .priv i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#34d399;margin-right:.35rem}
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:.4rem .8rem;border-radius:8px;font:inherit;font-size:.88rem;cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.4;pointer-events:none}
+.btn.on{border-color:var(--accent);color:var(--accent);background:rgba(34,211,238,.1)}
+
+/* upload cards */
+.drops{display:grid;grid-template-columns:1fr auto 1fr;gap:.8rem;padding:.9rem 1.2rem;align-items:stretch}
+.drop{border:1.5px dashed var(--line);border-radius:12px;padding:.8rem 1rem;background:var(--panel);display:flex;align-items:center;gap:.9rem;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--panel2)}
+.drop.has{border-style:solid}
+.drop .tag{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-weight:800}
+.drop.a .tag{background:rgba(229,72,77,.18);color:#ff8a8e}
+.drop.b .tag{background:rgba(22,163,74,.2);color:#4ade80}
+.drop b{display:block;font-size:.95rem}
+.drop small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:36vw}
+.drop input{display:none}
+.swap{align-self:center}
+
+/* toolbar */
+.bar{display:flex;flex-wrap:wrap;gap:.6rem 1.1rem;align-items:center;padding:.5rem 1.2rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--panel)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--panel2);color:var(--muted);padding:.38rem .8rem;font:inherit;font-size:.85rem;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:rgba(34,211,238,.15);color:var(--accent)}
+.bar label{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:.45rem}
+.bar input[type=range]{accent-color:var(--accent);width:110px}
+.bar .legend{margin-left:auto;display:flex;gap:.9rem;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:.3rem;vertical-align:-1px}
+
+/* workspace */
+.work{flex:1;display:grid;grid-template-columns:220px minmax(0,1fr) 320px;min-height:0;height:calc(100vh - 190px)}
+aside{background:var(--panel);overflow:auto;min-height:0}
+.left{border-right:1px solid var(--line)}
+.right{border-left:1px solid var(--line);display:flex;flex-direction:column}
+.side-h{position:sticky;top:0;background:var(--panel);padding:.6rem .8rem;border-bottom:1px solid var(--line);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tan);display:flex;justify-content:space-between;align-items:center;gap:.5rem;z-index:2}
+.side-h label{letter-spacing:0;text-transform:none;font-size:.78rem;color:var(--muted);display:flex;gap:.3rem;align-items:center}
+.pg{display:flex;align-items:center;gap:.6rem;padding:.55rem .8rem;border-bottom:1px solid rgba(38,54,90,.6);cursor:pointer;font-size:.88rem}
+.pg:hover{background:var(--panel2)}
+.pg.sel{background:rgba(34,211,238,.12);box-shadow:inset 3px 0 0 var(--accent)}
+.pg .n{font-weight:700;min-width:1.6rem}
+.pg .meta{color:var(--muted);font-size:.76rem;margin-left:auto;text-align:right}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;background:#475569}
+.dot.same{background:#34d399}.dot.changed{background:var(--accent2)}.dot.added{background:var(--add)}.dot.removed{background:var(--rem)}.dot.wait{background:#475569}
+
+.viewer{overflow:auto;background:#0e1626;padding:1rem;min-width:0;position:relative}
+.stage{position:relative;margin:0 auto;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.45);line-height:0}
+.stage canvas{width:100%;height:auto;display:block}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start}
+.sides .col .cap{line-height:1.3;font-size:.78rem;color:var(--muted);margin:0 0 .35rem;text-align:center}
+.swipe canvas.b{position:absolute;inset:0}
+.swipe .clip{position:absolute;inset:0}
+.swipe .handle{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);box-shadow:0 0 0 1px rgba(0,0,0,.4);pointer-events:none}
+.box{position:absolute;border:2px solid var(--accent2);border-radius:4px;background:rgba(245,158,11,.10);pointer-events:auto;cursor:pointer}
+.box.sel{border-color:var(--accent);background:rgba(34,211,238,.2);animation:fl .9s ease-out 2}
+@keyframes fl{50%{box-shadow:0 0 0 8px rgba(34,211,238,.35)}}
+.hide-boxes .box{display:none}
+.empty{display:grid;place-items:center;height:100%;text-align:center;color:var(--muted);padding:2rem}
+.empty h2{color:var(--text);margin:0 0 .4rem}
+.busy{position:absolute;inset:0;background:rgba(11,18,32,.65);display:grid;place-items:center;z-index:5;color:var(--text)}
+
+.tabs{display:flex;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);padding:.65rem;font:inherit;font-size:.85rem;cursor:pointer;border-bottom:2px solid transparent}
+.tabs button.on{color:var(--accent);border-bottom-color:var(--accent)}
+.pane{padding:.4rem 0;overflow:auto;flex:1}
+.rg{padding:.55rem .85rem;border-bottom:1px solid rgba(38,54,90,.6);cursor:pointer;font-size:.86rem;display:flex;gap:.6rem;align-items:center}
+.rg:hover,.rg.sel{background:var(--panel2)}
+.rg .k{font-size:.72rem;font-weight:700;padding:.1rem .5rem;border-radius:999px}
+.k.Added{background:rgba(22,163,74,.2);color:#4ade80}.k.Removed{background:rgba(229,72,77,.2);color:#ff8a8e}.k.Modified{background:rgba(245,158,11,.2);color:#fbbf24}
+.rg small{color:var(--muted);margin-left:auto}
+.note{padding:.8rem .9rem;color:var(--muted);font-size:.85rem}
+.txt{padding:.8rem .9rem;font-size:.86rem;line-height:1.75;word-break:break-word}
+.txt ins{background:rgba(22,163,74,.22);color:#86efac;text-decoration:none;border-radius:3px;padding:0 2px}
+.txt del{background:rgba(229,72,77,.22);color:#fca5a5;border-radius:3px;padding:0 2px}
+.sumline{padding:.6rem .9rem;border-bottom:1px solid var(--line);font-size:.84rem;color:var(--muted)}
+.sumline b{color:var(--text)}
+
+@media (max-width:1100px){
+  .work{grid-template-columns:170px minmax(0,1fr);height:auto}
+  .right{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);max-height:50vh}
+  .viewer{min-height:60vh}
+}
+@media (max-width:720px){
+  .drops{grid-template-columns:1fr}.swap{justify-self:center}
+  .work{grid-template-columns:1fr}.left{max-height:30vh;border-right:0;border-bottom:1px solid var(--line)}
+  .sides{grid-template-columns:1fr}.bar .legend{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← All tools</a>
+  <h1>Doc <span>Diff</span></h1>
+  <span class="sp"></span>
+  <span class="priv"><i></i>Runs in your browser. Files are not uploaded.</span>
+</header>
+
+<section class="drops">
+  <label class="drop a" id="dropA"><span class="tag">A</span><span><b>Original</b><small id="nameA">Drop a file or click to choose</small></span><input type="file" accept=".pdf,.pptx,.docx,.xlsx,.pptm,.docm,.xlsm,application/pdf" id="fileA"></label>
+  <button class="btn swap" id="swap" title="Swap A and B">⇄</button>
+  <label class="drop b" id="dropB"><span class="tag">B</span><span><b>Revised</b><small id="nameB">Drop a file or click to choose</small></span><input type="file" accept=".pdf,.pptx,.docx,.xlsx,.pptm,.docm,.xlsm,application/pdf" id="fileB"></label>
+</section>
+
+<div class="bar">
+  <div class="seg vis" id="views">
+    <button data-v="overlay" class="on">Overlay</button>
+    <button data-v="side">Side by side</button>
+    <button data-v="swipe">Swipe</button>
+  </div>
+  <div class="seg vis">
+    <button id="zout" title="Zoom out">−</button><button id="zfit" title="Fit width">Fit</button><button id="zin" title="Zoom in">+</button>
+  </div>
+  <label class="vis">Sensitivity <input type="range" id="thr" min="120" max="245" value="200" title="Higher picks up fainter lines"></label>
+  <label class="vis">Alignment tolerance <input type="range" id="tol" min="0" max="6" value="2" title="Ignore tiny shifts of this many pixels"><span id="tolv">2px</span></label>
+  <button class="btn on vis" id="boxes">Boxes</button>
+  <button class="btn vis" id="png" disabled>Download PNG</button>
+  <div class="legend"><span><i style="background:var(--rem)"></i>In A only</span><span><i style="background:var(--add)"></i>In B only</span><span><i style="background:#aab2c0"></i>Same</span></div>
+</div>
+
+<main class="work">
+  <aside class="left">
+    <div class="side-h"><span id="sideTitle">Pages</span><label><input type="checkbox" id="onlyChanged">Changed only</label></div>
+    <div id="pages"></div>
+  </aside>
+  <section class="viewer" id="viewer">
+    <div class="empty"><div><h2>Compare two versions of a file</h2>Add the original as <b>A</b> and the revised as <b>B</b>.<br><b>PDF</b>: visual and text differences, page by page.<br><b>PowerPoint, Word, Excel</b>: changed slides, paragraphs and cells.<br><br><small>Tip: ← → change page, J / K jump between changes.</small></div></div>
+  </section>
+  <aside class="right">
+    <div class="tabs"><button class="on" data-t="regions">Changes</button><button data-t="text">Text</button></div>
+    <div class="pane" id="pane"></div>
+  </aside>
+</main>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="office.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+
+const $ = s => document.querySelector(s);
+const S = {
+  doc:{a:null,b:null}, name:{a:'',b:''}, n:0, dims:[], stats:[],
+  cur:0, view:'overlay', thr:200, tol:2, zoom:1, boxes:true, only:false,
+  kind:null, res:null, token:0, run:0, cache:new Map(), sel:-1, tab:'regions', swipe:50
+};
+const COL = {same:[170,178,192], rem:[229,72,77], add:[22,163,74]};
+
+/* ---------- loading ---------- */
+const EMPTY = $('#viewer').innerHTML;
+function resetSides(){
+  S.doc = {a:null,b:null}; S.name = {a:'',b:''}; S.res = null; S.n = 0; S.stats = [];
+  for(const x of ['A','B']){ $('#name'+x).textContent = 'Drop a file or click to choose'; $('#drop'+x).classList.remove('has'); }
+  $('#viewer').innerHTML = EMPTY; $('#pages').innerHTML = ''; $('#pane').innerHTML = '';
+  $('#png').disabled = true; $('#sideTitle').textContent = 'Pages'; $('#onlyChanged').parentNode.style.display = '';
+  $('.tabs').style.display = ''; document.body.classList.remove('office');
+}
+async function loadFile(side, file){
+  if(!file) return;
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if(ext === 'pdf' || file.type === 'application/pdf') return loadPdf(side, file);
+  if(['pptx','pptm','docx','docm','xlsx','xlsm'].includes(ext)) return OFF.load(side, file, ext);
+  alert('Unsupported file type. Use PDF, PowerPoint (.pptx), Word (.docx) or Excel (.xlsx). Older .ppt, .doc and .xls files need to be re-saved in the newer format first.');
+}
+async function loadPdf(side, file){
+  try{
+    const buf = await file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({data:buf}).promise;
+    if(S.kind === 'office'){ OFF.reset(); resetSides(); }
+    S.kind = 'pdf';
+    S.doc[side] = doc;
+    S.name[side] = file.name;
+    const el = $('#name'+side.toUpperCase());
+    el.textContent = file.name + ' · ' + S.doc[side].numPages + ' page' + (S.doc[side].numPages===1?'':'s');
+    $('#drop'+side.toUpperCase()).classList.add('has');
+    start();
+  }catch(e){ alert('Could not read that PDF: ' + (e && e.message || e)); }
+}
+for(const s of ['A','B']){
+  const side = s.toLowerCase(), drop = $('#drop'+s);
+  $('#file'+s).addEventListener('change', e => { loadFile(side, e.target.files[0]); e.target.value=''; });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); loadFile(side, e.dataTransfer.files[0]); });
+}
+$('#swap').onclick = () => {
+  if(S.kind === 'office') return OFF.swap();
+  [S.doc.a,S.doc.b] = [S.doc.b,S.doc.a]; [S.name.a,S.name.b] = [S.name.b,S.name.a];
+  for(const s of ['a','b']){
+    $('#name'+s.toUpperCase()).textContent = S.doc[s] ? S.name[s]+' · '+S.doc[s].numPages+' page'+(S.doc[s].numPages===1?'':'s') : 'Drop a file or click to choose';
+    $('#drop'+s.toUpperCase()).classList.toggle('has', !!S.doc[s]);
+  }
+  start();
+};
+
+/* ---------- pixel work ---------- */
+function inkMask(c, thr){
+  const {width:W,height:H} = c, d = c.getContext('2d').getImageData(0,0,W,H).data, m = new Uint8Array(W*H);
+  for(let i=0,p=0;i<m.length;i++,p+=4) m[i] = (0.299*d[p]+0.587*d[p+1]+0.114*d[p+2]) < thr ? 1 : 0;
+  return m;
+}
+function dilate(m, W, H, r){
+  if(!r) return m;
+  const t = new Uint8Array(W*H), o = new Uint8Array(W*H), pre = new Int32Array(Math.max(W,H)+1);
+  for(let y=0;y<H;y++){
+    const row=y*W; pre[0]=0;
+    for(let x=0;x<W;x++) pre[x+1]=pre[x]+m[row+x];
+    for(let x=0;x<W;x++){ const lo=Math.max(0,x-r), hi=Math.min(W,x+r+1); t[row+x] = pre[hi]-pre[lo]>0?1:0; }
+  }
+  for(let x=0;x<W;x++){
+    pre[0]=0;
+    for(let y=0;y<H;y++) pre[y+1]=pre[y]+t[y*W+x];
+    for(let y=0;y<H;y++){ const lo=Math.max(0,y-r), hi=Math.min(H,y+r+1); o[y*W+x] = pre[hi]-pre[lo]>0?1:0; }
+  }
+  return o;
+}
+function findRegions(chg, W, H){
+  const g = Math.max(8, Math.round(W/70)), gw = Math.ceil(W/g), gh = Math.ceil(H/g);
+  const cr = new Uint32Array(gw*gh), ca = new Uint32Array(gw*gh);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const v = chg[y*W+x]; if(!v) continue;
+    const c = ((y/g)|0)*gw + ((x/g)|0); if(v===1) cr[c]++; else ca[c]++;
+  }
+  const act = new Uint8Array(gw*gh);
+  for(let i=0;i<act.length;i++) act[i] = (cr[i]+ca[i]) >= 3 ? 1 : 0;
+  const seen = new Uint8Array(gw*gh), out = [];
+  for(let s=0;s<act.length;s++){
+    if(!act[s] || seen[s]) continue;
+    const st=[s]; seen[s]=1; let x0=gw,y0=gh,x1=0,y1=0,rem=0,add=0;
+    while(st.length){
+      const c=st.pop(), cx=c%gw, cy=(c/gw)|0;
+      x0=Math.min(x0,cx); x1=Math.max(x1,cx); y0=Math.min(y0,cy); y1=Math.max(y1,cy); rem+=cr[c]; add+=ca[c];
+      for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){
+        const nx=cx+dx, ny=cy+dy; if(nx<0||ny<0||nx>=gw||ny>=gh) continue;
+        const n=ny*gw+nx; if(act[n] && !seen[n]){ seen[n]=1; st.push(n); }
+      }
+    }
+    const kind = add < rem*0.1 ? 'Removed' : rem < add*0.1 ? 'Added' : 'Modified';
+    out.push({x:x0*g, y:y0*g, w:Math.min(W,(x1+1)*g)-x0*g, h:Math.min(H,(y1+1)*g)-y0*g, rem, add, kind});
+  }
+  out.sort((p,q) => (p.y-q.y) || (p.x-q.x));
+  return out.slice(0,300);
+}
+function diffCanvases(ca, cb, thr, tol){
+  const W=ca.width, H=ca.height, r = Math.round(tol * W/1400);
+  const ia = inkMask(ca,thr), ib = inkMask(cb,thr), da = dilate(ia,W,H,r), db = dilate(ib,W,H,r);
+  const img = new ImageData(W,H), px = img.data, chg = new Uint8Array(W*H);
+  let nRem=0, nAdd=0, nAny=0;
+  for(let i=0,p=0;i<ia.length;i++,p+=4){
+    let c = null;
+    if(ia[i] && !db[i]){ c=COL.rem; chg[i]=1; nRem++; }
+    else if(ib[i] && !da[i]){ c=COL.add; chg[i]=2; nAdd++; }
+    else if(ia[i]||ib[i]) c=COL.same;
+    if(ia[i]||ib[i]) nAny++;
+    if(c){ px[p]=c[0]; px[p+1]=c[1]; px[p+2]=c[2]; px[p+3]=255; } else { px[p]=px[p+1]=px[p+2]=255; px[p+3]=255; }
+  }
+  const out = document.createElement('canvas'); out.width=W; out.height=H;
+  out.getContext('2d').putImageData(img,0,0);
+  return {out, regions:findRegions(chg,W,H), pct: nAny ? (nRem+nAdd)/nAny*100 : 0, nRem, nAdd};
+}
+
+/* ---------- pages ---------- */
+async function pageDims(){
+  S.dims = [];
+  for(let i=1;i<=S.n;i++){
+    const d = {};
+    for(const s of ['a','b']){
+      if(S.doc[s] && i<=S.doc[s].numPages){ const v=(await S.doc[s].getPage(i)).getViewport({scale:1}); d[s]={w:v.width,h:v.height}; }
+    }
+    S.dims.push(d);
+  }
+}
+async function renderTo(doc, i, W, H, scale){
+  const c = document.createElement('canvas'); c.width=W; c.height=H;
+  const ctx = c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  if(doc && i<=doc.numPages){
+    const p = await doc.getPage(i);
+    await p.render({canvasContext:ctx, viewport:p.getViewport({scale})}).promise;
+  }
+  return c;
+}
+async function computePage(i, W, keep){
+  const key = [i,W,S.thr,S.tol,S.run].join('|');
+  if(keep && S.cache.has(key)) return S.cache.get(key);
+  const d = S.dims[i-1];
+  const mw = Math.max(d.a?d.a.w:0, d.b?d.b.w:0), mh = Math.max(d.a?d.a.h:0, d.b?d.b.h:0);
+  const H = Math.round(W*mh/mw), scale = W/mw;
+  const ca = await renderTo(S.doc.a, i, W, H, scale), cb = await renderTo(S.doc.b, i, W, H, scale);
+  const r = diffCanvases(ca, cb, S.thr, S.tol);
+  r.W=W; r.H=H;
+  r.state = !d.a ? 'added' : !d.b ? 'removed' : r.regions.length ? 'changed' : 'same';
+  if(keep){ r.ca=ca; r.cb=cb; S.cache.set(key,r); if(S.cache.size>4) S.cache.delete(S.cache.keys().next().value); }
+  return r;
+}
+
+/* ---------- run ---------- */
+async function start(){
+  if(!S.doc.a || !S.doc.b){ return; }
+  const run = ++S.run;
+  S.n = Math.max(S.doc.a.numPages, S.doc.b.numPages);
+  S.cache.clear(); S.stats = new Array(S.n).fill(null); S.cur = 1; S.sel = -1;
+  $('#png').disabled = true;
+  await pageDims(); if(run!==S.run) return;
+  renderList();
+  show(1);
+  for(let i=1;i<=S.n;i++){
+    if(run!==S.run) return;
+    const r = await computePage(i, 800, false);
+    if(run!==S.run) return;
+    S.stats[i-1] = {state:r.state, pct:r.pct, n:r.regions.length};
+    renderList();
+    await new Promise(res => setTimeout(res));
+  }
+}
+function renderList(){
+  const box = $('#pages'); box.innerHTML = '';
+  for(let i=1;i<=S.n;i++){
+    const st = S.stats[i-1];
+    if(S.only && st && st.state==='same') continue;
+    const d = document.createElement('div');
+    d.className = 'pg' + (i===S.cur?' sel':'');
+    const label = !st ? 'comparing…' : st.state==='same' ? 'identical' : st.state==='added' ? 'new page' : st.state==='removed' ? 'page removed'
+      : st.n + ' change' + (st.n===1?'':'s') + ' · ' + (st.pct<10?st.pct.toFixed(1):Math.round(st.pct)) + '%';
+    d.innerHTML = `<span class="dot ${st?st.state:'wait'}"></span><span class="n">${i}</span><span class="meta">${label}</span>`;
+    d.onclick = () => show(i);
+    box.appendChild(d);
+  }
+}
+$('#onlyChanged').onchange = e => { S.only = e.target.checked; if(S.kind === 'office') OFF.render(); else renderList(); };
+
+async function show(i){
+  S.cur = i; S.sel = -1; const my = ++S.token;
+  renderList();
+  const v = $('#viewer'); let b = v.querySelector('.busy');
+  if(!b){ b = document.createElement('div'); b.className='busy'; b.textContent='Rendering page '+i+'…'; v.appendChild(b); }
+  const r = await computePage(i, 1400, true);
+  if(my!==S.token) return;
+  S.res = r;
+  S.stats[i-1] = {state:r.state, pct:r.pct, n:r.regions.length};
+  renderList();
+  $('#png').disabled = false;
+  paint(); renderPane();
+}
+
+/* ---------- viewer ---------- */
+function boxEls(){
+  const frag = document.createDocumentFragment();
+  S.res.regions.forEach((g,k) => {
+    const e = document.createElement('div'); e.className='box'+(k===S.sel?' sel':''); e.dataset.k=k;
+    e.style.cssText = `left:${g.x/S.res.W*100}%;top:${g.y/S.res.H*100}%;width:${g.w/S.res.W*100}%;height:${g.h/S.res.H*100}%`;
+    e.title = g.kind;
+    e.onclick = ev => { ev.stopPropagation(); selectRegion(k, false); };
+    frag.appendChild(e);
+  });
+  return frag;
+}
+function paint(){
+  const v = $('#viewer'), r = S.res, z = S.zoom*100 + '%';
+  v.innerHTML = ''; v.classList.toggle('hide-boxes', !S.boxes);
+  const stage = cls => { const s=document.createElement('div'); s.className='stage '+(cls||''); return s; };
+  if(S.view==='overlay'){
+    const s = stage(); s.style.width=z; s.appendChild(r.out); s.appendChild(boxEls()); v.appendChild(s);
+  }else if(S.view==='side'){
+    const wrap = document.createElement('div'); wrap.className='sides'; wrap.style.width=z;
+    for(const [k,lab,c] of [['a','A · '+S.name.a,r.ca],['b','B · '+S.name.b,r.cb]]){
+      const col = document.createElement('div'); col.className='col';
+      col.innerHTML = `<p class="cap"></p>`; col.firstChild.textContent = lab;
+      const s = stage(); s.appendChild(c); s.appendChild(boxEls()); col.appendChild(s); wrap.appendChild(col);
+    }
+    v.appendChild(wrap);
+  }else{
+    const s = stage('swipe'); s.style.width=z;
+    r.ca.className='a'; r.cb.className='b';
+    const clip = document.createElement('div'); clip.className='clip'; clip.appendChild(r.cb);
+    const h = document.createElement('div'); h.className='handle';
+    s.appendChild(r.ca); s.appendChild(clip); s.appendChild(h); s.appendChild(boxEls());
+    const setX = p => { S.swipe=p; clip.style.clipPath=`inset(0 0 0 ${p}%)`; h.style.left=p+'%'; };
+    setX(S.swipe);
+    const move = e => { const bb=s.getBoundingClientRect(); setX(Math.max(0,Math.min(100,(e.clientX-bb.left)/bb.width*100))); };
+    s.addEventListener('pointerdown', e => { if(e.target.classList.contains('box')) return; s.setPointerCapture(e.pointerId); move(e); s.onpointermove=move; });
+    s.addEventListener('pointerup', () => { s.onpointermove=null; });
+    s.style.cursor='ew-resize'; s.style.touchAction='none';
+    v.appendChild(s);
+  }
+}
+function selectRegion(k, scroll=true){
+  S.sel = k;
+  document.querySelectorAll('.box').forEach(b => b.classList.toggle('sel', +b.dataset.k===k));
+  document.querySelectorAll('.rg').forEach(b => b.classList.toggle('sel', +b.dataset.k===k));
+  if(scroll){ const b=document.querySelector('.box[data-k="'+k+'"]'); if(b) b.scrollIntoView({block:'center',inline:'center',behavior:'smooth'}); }
+}
+
+/* ---------- right pane ---------- */
+function renderPane(){
+  const p = $('#pane'), r = S.res;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t===S.tab));
+  if(S.tab==='regions'){
+    p.innerHTML = '';
+    if(r.state==='added'||r.state==='removed'){
+      p.innerHTML = `<div class="note">Page ${S.cur} exists only in ${r.state==='added'?'B (new page)':'A (page removed)'}.</div>`;
+      return;
+    }
+    const head = document.createElement('div'); head.className='sumline';
+    head.innerHTML = r.regions.length ? `<b>${r.regions.length}</b> change${r.regions.length===1?'':'s'} on page ${S.cur} · <b>${r.pct<10?r.pct.toFixed(1):Math.round(r.pct)}%</b> of drawn content` : `Page ${S.cur} is <b>identical</b> at this sensitivity.`;
+    p.appendChild(head);
+    r.regions.forEach((g,k) => {
+      const e = document.createElement('div'); e.className='rg'+(k===S.sel?' sel':''); e.dataset.k=k;
+      e.innerHTML = `<span class="k ${g.kind}">${g.kind}</span><span>Change ${k+1}</span><small>${Math.round(g.x/r.W*100)}% → · ${Math.round(g.y/r.H*100)}% ↓</small>`;
+      e.onclick = () => selectRegion(k);
+      p.appendChild(e);
+    });
+    if(r.regions.length===300){ const n=document.createElement('div'); n.className='note'; n.textContent='Showing the first 300 changes. Lower the sensitivity or raise the tolerance to reduce noise.'; p.appendChild(n); }
+  }else{
+    p.innerHTML = '<div class="note">Reading text…</div>';
+    textDiff(S.cur).then(h => { if(S.tab==='text' && S.res===r) p.innerHTML = h; });
+  }
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { S.tab=b.dataset.t; if(S.res) renderPane(); });
+
+async function tokens(doc, i){
+  if(!doc || i>doc.numPages) return null;
+  const tc = await (await doc.getPage(i)).getTextContent();
+  return tc.items.map(x => x.str).join(' ').split(/\s+/).filter(Boolean);
+}
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+async function textDiff(i){
+  const A = await tokens(S.doc.a,i), B = await tokens(S.doc.b,i);
+  if(!A && !B) return '<div class="note">No page.</div>';
+  const a = A||[], b = B||[];
+  if(!a.length && !b.length) return '<div class="note">No selectable text on this page (it may be a scanned image or pure drawing). Use the visual comparison.</div>';
+  let s=0; while(s<a.length && s<b.length && a[s]===b[s]) s++;
+  let ea=a.length, eb=b.length; while(ea>s && eb>s && a[ea-1]===b[eb-1]){ ea--; eb--; }
+  const ma=a.slice(s,ea), mb=b.slice(s,eb);
+  let parts=[], rem=0, add=0;
+  if(ma.length*mb.length > 9e6){
+    return '<div class="note">This page has too much changed text to diff word by word. See the visual comparison.</div>';
+  }
+  const n=ma.length, m=mb.length, w=m+1, L=new Uint16Array((n+1)*w);
+  for(let x=n-1;x>=0;x--) for(let y=m-1;y>=0;y--) L[x*w+y] = ma[x]===mb[y] ? L[(x+1)*w+y+1]+1 : Math.max(L[(x+1)*w+y], L[x*w+y+1]);
+  let x=0,y=0; const mid=[];
+  while(x<n && y<m){
+    if(ma[x]===mb[y]){ mid.push(['=',ma[x]]); x++; y++; }
+    else if(L[(x+1)*w+y] >= L[x*w+y+1]){ mid.push(['-',ma[x]]); x++; rem++; }
+    else { mid.push(['+',mb[y]]); y++; add++; }
+  }
+  while(x<n){ mid.push(['-',ma[x++]]); rem++; }
+  while(y<m){ mid.push(['+',mb[y++]]); add++; }
+  const ctx = 6, all = [...a.slice(Math.max(0,s-ctx),s).map(t=>['=',t]), ...mid, ...a.slice(ea,ea+ctx).map(t=>['=',t])];
+  if(!rem && !add){
+    return `<div class="sumline">Text is <b>identical</b> on this page.${(S.res.state==='changed')?' The differences are graphical (lines, symbols, dimensions as artwork).':''}</div>`;
+  }
+  // collapse long unchanged runs
+  const html=[]; let run=[];
+  const flush=()=>{ if(run.length>14){ html.push(esc(run.slice(0,6).join(' '))+' <span style="color:var(--muted)">…</span> '+esc(run.slice(-6).join(' '))); } else if(run.length) html.push(esc(run.join(' '))); run=[]; };
+  for(const [op,t] of all){
+    if(op==='='){ run.push(t); continue; }
+    flush(); html.push(op==='+' ? `<ins>${esc(t)}</ins>` : `<del>${esc(t)}</del>`);
+  }
+  flush();
+  return `<div class="sumline"><b>${add}</b> word${add===1?'':'s'} added · <b>${rem}</b> removed</div><div class="txt">${html.join(' ')}</div>`;
+}
+
+/* ---------- controls ---------- */
+document.querySelectorAll('#views button').forEach(b => b.onclick = () => {
+  S.view=b.dataset.v; document.querySelectorAll('#views button').forEach(x=>x.classList.toggle('on',x===b)); if(S.res) paint();
+});
+$('#zin').onclick = () => { S.zoom=Math.min(5,S.zoom*1.25); if(S.res) paint(); };
+$('#zout').onclick = () => { S.zoom=Math.max(.4,S.zoom/1.25); if(S.res) paint(); };
+$('#zfit').onclick = () => { S.zoom=1; if(S.res) paint(); };
+$('#boxes').onclick = e => { S.boxes=!S.boxes; e.target.classList.toggle('on',S.boxes); $('#viewer').classList.toggle('hide-boxes',!S.boxes); };
+let tm;
+function reflow(){ $('#tolv').textContent = S.tol+'px'; clearTimeout(tm); tm=setTimeout(start, 300); }
+$('#thr').oninput = e => { S.thr=+e.target.value; reflow(); };
+$('#tol').oninput = e => { S.tol=+e.target.value; reflow(); };
+$('#png').onclick = () => {
+  const r=S.res, bar=44, c=document.createElement('canvas'); c.width=r.W; c.height=r.H+bar;
+  const x=c.getContext('2d'); x.fillStyle='#0b1220'; x.fillRect(0,0,c.width,c.height);
+  x.drawImage(r.out,0,bar);
+  x.strokeStyle='#f59e0b'; x.lineWidth=3; r.regions.forEach(g => x.strokeRect(g.x,g.y+bar,g.w,g.h));
+  x.font='600 15px system-ui,sans-serif'; x.fillStyle='#e8eefc'; x.textBaseline='middle';
+  x.fillText(`A: ${S.name.a}   →   B: ${S.name.b}   ·   page ${S.cur}   ·   ${r.regions.length} change${r.regions.length===1?'':'s'}`, 14, bar/2);
+  c.toBlob(b => { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='diff-page-'+S.cur+'.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); });
+};
+document.addEventListener('keydown', e => {
+  if(!S.res || /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if(e.key==='ArrowRight' && S.cur<S.n) show(S.cur+1);
+  else if(e.key==='ArrowLeft' && S.cur>1) show(S.cur-1);
+  else if(e.key==='j'||e.key==='k'){
+    const n=S.res.regions.length; if(!n) return;
+    selectRegion(e.key==='j' ? (S.sel+1)%n : (S.sel<=0 ? n-1 : S.sel-1));
+  }
+});
+</script>
+</body>
+</html>

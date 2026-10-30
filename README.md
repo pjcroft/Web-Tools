@@ -5,6 +5,7 @@ Source for the forward-facing tools on pjcroft.ddnsfree.com (public, no login).
 - `pc-plan/` — PC Plan Gantt (Python/Java backend, Docker). Public at /pc-plan/.
 - `pc-slide-studio/` — PC Slide Studio (Flask/Docker PowerPoint creator). Public at /pc-slide-studio/.
 - `pc-form-studio/` — PC Form Studio (static, fully client-side). Public at /pc-form-page-studio/.
+- `pdf-diff/` — Doc Diff (static, fully client-side): compares PDF, PowerPoint, Word and Excel files. Public at /pdf-diff/.
 
 ## Deployment (not in this repo)
 
