@@ -44,7 +44,7 @@ Deck options: slide transition (Fade, Push, Wipe, None) and **Animate content**.
 
 ## AI models
 
-Free OpenRouter models only. The list lives in `ai.py` (`MODELS`): Auto (OpenRouter's free router), GPT-OSS 120B, Gemma 4 31B, Nemotron Nano 12B VL, Nemotron 3 Super 120B. Models marked "sees images" receive pictures; if a text-only model is chosen and pictures are attached, Auto is used for that request. If a model is busy, unavailable or returns unusable output, the app falls back to Auto before giving up. Only ids ending in `:free` (or the free router) are ever sent, so the app cannot spend credit. Free availability changes on OpenRouter: if a model is retired, edit `MODELS`.
+Free OpenRouter models only. The list lives in `ai.py` (`MODELS`): Auto (OpenRouter's free router), Gemma 4 31B, Nemotron Nano 12B VL, Nemotron 3 Super 120B. Models marked "sees images" receive pictures; if a text-only model is chosen and pictures are attached, Auto is used for that request. If a model is busy, unavailable or returns unusable output, the app falls back to Auto before giving up. Only ids ending in `:free` (or the free router) are ever sent, so the app cannot spend credit. Free availability changes on OpenRouter: if a model is retired, edit `MODELS`.
 
 The AI is told never to invent numbers: stats, charts and tables are only used for figures that appear in the source. Always review facts before sharing.
 

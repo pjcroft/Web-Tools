@@ -20,8 +20,6 @@ TOTAL_BUDGET = 270       # seconds for the whole request incl. fallback (gunicor
 MODELS = [
     {'id': AUTO, 'label': 'Auto: best available free model', 'vision': True,
      'note': 'OpenRouter picks a free model that can handle the request.'},
-    {'id': 'openai/gpt-oss-120b:free', 'label': 'GPT-OSS 120B', 'vision': False,
-     'note': 'Strong at following the slide format and numbers. Text only.'},
     {'id': 'google/gemma-4-31b-it:free', 'label': 'Gemma 4 31B', 'vision': True,
      'note': 'Good all-rounder that can read pictures and drawings.'},
     {'id': 'nvidia/nemotron-nano-12b-v2-vl:free', 'label': 'Nemotron Nano 12B VL', 'vision': True,

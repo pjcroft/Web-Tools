@@ -235,9 +235,9 @@ class Generation(unittest.TestCase):
 
     def test_falls_back_to_auto_when_model_is_busy(self):
         with patch('urllib.request.urlopen', side_effect=[http_error(429), urlopen_result(BASIC, 'auto-picked')]) as call:
-            r = self.post(model='openai/gpt-oss-120b:free')
+            r = self.post(model='nvidia/nemotron-3-super-120b-a12b:free')
         self.assertEqual((r.status_code, r.json['model']), (200, 'auto-picked'))
-        self.assertEqual([json.loads(c.args[0].data)['model'] for c in call.call_args_list], ['openai/gpt-oss-120b:free', 'openrouter/free'])
+        self.assertEqual([json.loads(c.args[0].data)['model'] for c in call.call_args_list], ['nvidia/nemotron-3-super-120b-a12b:free', 'openrouter/free'])
 
     def test_retries_without_json_mode_when_unsupported(self):
         with patch('urllib.request.urlopen', side_effect=[http_error(400), urlopen_result(BASIC)]) as call:
@@ -247,7 +247,7 @@ class Generation(unittest.TestCase):
 
     def test_busy_everywhere_reports_429(self):
         with patch('urllib.request.urlopen', side_effect=http_error(429)):
-            self.assertEqual(self.post(model='openai/gpt-oss-120b:free').status_code, 429)
+            self.assertEqual(self.post(model='nvidia/nemotron-3-super-120b-a12b:free').status_code, 429)
 
     def test_garbage_output_is_an_error_not_a_crash(self):
         bad = io.BytesIO(json.dumps({'choices': [{'message': {'content': 'sorry I cannot'}}]}).encode())
@@ -276,7 +276,7 @@ class Generation(unittest.TestCase):
     def test_text_only_model_with_pictures_falls_back_to_auto(self):
         png = base64.b64decode(PNG.split(',', 1)[1])
         with patch('urllib.request.urlopen', return_value=urlopen_result(BASIC)) as call:
-            r = self.client.post('/api/draft', data={'files': (io.BytesIO(png), 'plan.png'), 'model': 'openai/gpt-oss-120b:free'})
+            r = self.client.post('/api/draft', data={'files': (io.BytesIO(png), 'plan.png'), 'model': 'nvidia/nemotron-3-super-120b-a12b:free'})
         self.assertEqual(json.loads(call.call_args.args[0].data)['model'], 'openrouter/free')
         self.assertTrue(any('cannot see pictures' in w for w in r.json['warnings']))
 
