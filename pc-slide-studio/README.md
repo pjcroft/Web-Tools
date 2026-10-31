@@ -20,36 +20,58 @@ python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 export OPENROUTER_API_KEY='your-key'
-gunicorn --bind 0.0.0.0:8085 --workers 2 --threads 4 --timeout 240 app:app
+gunicorn --bind 0.0.0.0:8085 --workers 2 --threads 4 --timeout 330 app:app
 ```
 
 The environment variable must be set in the same shell or service environment that starts the app. `python app.py` is available for local development on port 8080.
 
 ## Use
 
-Upload PDF, DOCX, PPTX, XLS, XLSX, ODT, ODS, HTML, RTF, TXT, MD, CSV, TSV or JSON source material, or paste notes. Spreadsheet and OpenDocument tables are extracted as text, one row per line with cells separated by " | ". Set a title, purpose and target slide count. Generate the draft, edit titles and bullet points, change layouts and reorder slides, then download the PowerPoint. Save/open JSON drafts to continue later. The sample button lets you test editing and export without an API key.
+1. Pick a **presentation style**. Each one shows an example of the slides it produces and tunes the AI for that audience (project update, executive summary, customer presentation, proposal, training, technical review, general).
+2. Upload source material (PDF, DOCX, PPTX, XLS, XLSX, ODT, ODS, HTML, RTF, TXT, MD, CSV, TSV, JSON) and/or pictures (PNG, JPG, WEBP), or paste notes. Spreadsheet tables become text, one row per line with cells separated by " | ".
+3. Choose a model and generate the draft. Pictures, drawings and short or scanned PDFs are shown to the AI when "Let the AI see pictures" is on, and it can place them on slides.
+4. Edit every slide (text, figures, chart data, steps, tables, speaker notes), change layouts, reorder, duplicate, then download the PowerPoint. Save/open JSON drafts to continue later; the browser also keeps an unsaved draft.
 
-## Image slides
+The sample button lets you test editing and export without an API key.
 
-Drawings and layouts often have no extractable text, so text generation alone cannot use them. Use **Add PDF pages as image slides** to render PDF pages as pictures (up to the first 20 pages, 150 dpi) and add each as an image slide, or **Add image slide** to add a PNG/JPEG directly. Image slides have an editable title shown above the picture; bullets are not shown on them. The picture is embedded in the exported PowerPoint, resized to at most 2000 pixels on its long side. The AI models are text-only, so image slides are visual only — the AI does not describe the picture.
+## Slide types
 
-The default model is `openrouter/free`. Nemotron 3 Super Free is also selectable. The app requests JSON output and validates it. It never switches to paid models. Free model availability and quotas depend on OpenRouter. Invalid AI output can require another generation attempt. The requested slide count is a target, not a guarantee.
+Cover, Agenda, Section, Content, Two columns, Key figures (stats), Chart (column, bar, line, pie, doughnut), Timeline, Table, Quote, Image, Image + text, Closing.
+
+Charts and tables are native PowerPoint objects, so they stay editable in PowerPoint (right-click, Edit Data). Slides can carry a one-sentence takeaway bar and speaker notes. Image slides are for pictures and drawings; PDF pages can be added as pictures with **Add PDF pages as image slides** (first 20 pages, 150 dpi).
+
+Deck options: slide transition (Fade, Push, Wipe, None) and **Animate content**. Cards, charts, timeline steps and bullets fade in one after another automatically when the slideshow reaches the slide. Turn animation off for a static deck.
+
+## AI models
+
+Free OpenRouter models only. The list lives in `ai.py` (`MODELS`): Auto (OpenRouter's free router), GPT-OSS 120B, Gemma 4 31B, Nemotron Nano 12B VL, Nemotron 3 Super 120B. Models marked "sees images" receive pictures; if a text-only model is chosen and pictures are attached, Auto is used for that request. If a model is busy, unavailable or returns unusable output, the app falls back to Auto before giving up. Only ids ending in `:free` (or the free router) are ever sent, so the app cannot spend credit. Free availability changes on OpenRouter: if a model is retired, edit `MODELS`.
+
+The AI is told never to invent numbers: stats, charts and tables are only used for figures that appear in the source. Always review facts before sharing.
 
 ## Template and export
 
-The original template is included at `templates/prima-power.pptx`. The exporter reuses its cover, standard content, blue section and closing layouts, slide masters, theme and embedded media. Text remains editable. The outdated fixed cover date is removed from the generated copy. The original uploaded template is unchanged. The template's Barlow font should be installed on computers opening the deck for the closest match; otherwise the viewer may substitute fonts.
+The original Prima Power template is in `templates/prima-power.pptx` and is not modified. The exporter (`builder.py`) opens a copy, removes its two sample slides, and builds each slide from the template's layouts (cover, standard, blue section, closing), keeping masters, theme, logos and backgrounds. Content layers (cards, figures, charts, timelines, tables) are drawn on top in the template's brand colours. Fonts: install Barlow on computers that open the deck, otherwise PowerPoint substitutes a font.
 
-The source template contains two sample slides; these are replaced rather than included in the output. Closing slides use the original fixed THANK YOU artwork and wording. Only content slides display bullets. Draft cards are text editors rather than exact visual previews. Review exported slides in PowerPoint for text fit before sharing.
+Text sizes are chosen by estimating fit, not by PowerPoint, so review the exported file for text overflow before sharing. Animations and transitions are written as standard PowerPoint XML and check out structurally, but have been verified in LibreOffice rather than every PowerPoint version.
 
-## Current scope
+## Code layout
 
-Text extraction and text-based slide generation. Uploaded images, diagrams and tables are not automatically recreated as slide visuals. PDF scans need OCR first. Images inside source documents are not sent to the AI. DOCX table values are extracted as text. Uploads are limited to 30 MB per request, PDFs to 200 pages, source text to 160,000 characters, and final decks to 40 slides. Up to six bullets per content slide are supported, with 220 characters per bullet. Use shorter bullets for better fit.
+- `app.py` Flask routes only.
+- `extract.py` source files to text and pictures.
+- `ai.py` OpenRouter client, model list, prompt, fallback and JSON repair.
+- `styles.py` the presentation styles and their example decks.
+- `schema.py` deck schema, limits and normalisation (lenient for AI output, strict for export).
+- `builder.py` the PowerPoint exporter; `anim.py` transitions and animations.
+- `make_examples.py` regenerates `static/examples/*.jpg` (needs LibreOffice and poppler); run it after changing layouts or styles.
+- `static/` the web page (`index.html`, `app.css`, `app.js`).
 
-Files and drafts are processed in server memory and are not intentionally saved to disk or a database. The AI request sends extracted text through OpenRouter to its selected provider. Your browser retains a current draft only while the page stays open unless you download it. Server/proxy request buffering and logs follow your hosting configuration.
+## Limits
+
+Uploads 30 MB per request, PDFs 200 pages, source text 160,000 characters, up to 8 pictures sent to the AI, decks up to 40 slides. Images inside source documents are only sent when "Let the AI see pictures" is on. Scanned PDFs are read by vision models rather than OCR. Files and drafts are processed in server memory and not saved; the AI request sends extracted text and pictures through OpenRouter to the selected provider.
 
 ## Verification
 
-`python test_app.py` checks export structure and slide layout relationships, editable text, input rejection, source extraction, and a mocked OpenRouter generation. Live AI generation requires your configured key and has not been exercised with your account.
+`python test_app.py` checks every layout exports with a consistent package, native charts, tables, notes, transitions and animation targets, strict and lenient validation, mocked OpenRouter generation (fallbacks, picture prompts, free-model enforcement) and source extraction.
 
 ## App color standard
 

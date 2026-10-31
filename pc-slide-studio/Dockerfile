@@ -6,4 +6,4 @@ COPY . .
 RUN useradd --system --uid 10001 studio
 USER studio
 EXPOSE 8080
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "240", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "330", "app:app"]
